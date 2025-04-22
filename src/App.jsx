@@ -4,8 +4,10 @@ import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 import './App.css'
 
+// 使用WidthProvider包装Responsive组件，自动计算宽度
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
+// 定义可用的表单组件
 const componentList = [
   { id: 'input', title: '输入框', icon: '📝' },
   { id: 'select', title: '下拉选择', icon: '🔽' },
@@ -15,6 +17,7 @@ const componentList = [
   { id: 'date', title: '日期选择', icon: '📅' }
 ]
 
+// 渲染表单组件
 const renderFormComponent = (component) => {
   switch (component.id) {
     case 'input':
@@ -75,20 +78,29 @@ const renderFormComponent = (component) => {
 }
 
 function App() {
+  // 存储当前表单中的组件
   const [formItems, setFormItems] = useState([])
   
+  // 处理从组件列表拖拽到设计区
   const onDragStart = (e, component) => {
     e.dataTransfer.setData('component', JSON.stringify(component))
   }
   
+  // 处理拖拽放置
   const onDrop = (e) => {
     e.preventDefault()
     const componentData = JSON.parse(e.dataTransfer.getData('component'))
     
+    // 计算当前最大的 y 坐标
+    const maxY = formItems.reduce((max, item) => {
+      return Math.max(max, item.y)
+    }, -1)
+    
+    // 创建新的表单项
     const newItem = {
-      i: `item-${Date.now()}`, 
+      i: `item-${Date.now()}`, // 唯一ID
       x: 0,
-      y: Infinity, 
+      y: maxY + 1, // 放在最后一个组件的下方
       w: 6,
       h: 2,
       component: componentData
@@ -97,10 +109,12 @@ function App() {
     setFormItems([...formItems, newItem])
   }
   
+  // 允许放置
   const onDragOver = (e) => {
     e.preventDefault()
   }
   
+  // 布局变化时更新状态
   const onLayoutChange = (layout) => {
     const updatedItems = formItems.map(item => {
       const layoutItem = layout.find(l => l.i === item.i)
@@ -109,10 +123,10 @@ function App() {
     setFormItems(updatedItems)
   }
   
-  // // 删除组件
-  // const removeItem = (itemId) => {
-  //   setFormItems(formItems.filter(item => item.i !== itemId))
-  // }
+  // 删除组件
+  const removeItem = (itemId) => {
+    setFormItems(formItems.filter(item => item.i !== itemId))
+  }
 
   return (
     <div className="form-designer">     
@@ -143,15 +157,23 @@ function App() {
           <ResponsiveGridLayout
             className="layout"
             layouts={{ lg: formItems }}
-            verticalCompact={false}
+            // verticalCompact={false}
             breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
             cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
             rowHeight={60}
             onLayoutChange={onLayoutChange}
-            autoSize={true}
           >
             {formItems.map(item => (
               <div key={item.i} className="grid-item">
+                <div className="item-header">
+                  <span>{item.component.title}</span>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => removeItem(item.i)}
+                  >
+                    ×
+                  </button>
+                </div>
                 <div className="item-content">
                   {renderFormComponent(item.component)}
                 </div>
